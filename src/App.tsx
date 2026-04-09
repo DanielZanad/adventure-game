@@ -1,150 +1,193 @@
-import { Map as MapIcon, ShelvingUnit, Skull, Key, Scroll } from "lucide-react";
-import { Button } from "./components/ui/button";
-import { Input } from "./components/ui/input";
-import { DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog } from "./components/ui/dialog";
+import { Key, Scroll } from "lucide-react"
+import { invoke } from "@tauri-apps/api/core"
+import { useEffect, useMemo, useState } from "react"
 
-function App() {
-  return (
-    // Added a dark background to make the amber pop, giving it that retro terminal feel
-    <div className="h-screen flex justify-center items-center bg-zinc-950 text-amber-500 font-mono">
-      <div className="w-3/4 h-3/4 flex flex-col justify-center">
-        <div className="w-full h-full flex border-2 border-amber-500 bg-black shadow-[0_0_15px_rgba(245,158,11,0.2)]">
-          
-          {/* SIDEBAR */}
-          <div className="w-16 h-full flex flex-col p-2 space-y-4 border-r-2 border-amber-500/50 bg-zinc-900/50">
-            
-            {/* INVENTORY DIALOG */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="h-12 border-amber-500/50 text-amber-500 hover:bg-amber-500/20 hover:text-amber-400 cursor-pointer">
-                  <ShelvingUnit size={24} />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-zinc-950 border-2 border-amber-500 text-amber-500 font-mono sm:max-w-md shadow-[0_0_30px_rgba(245,158,11,0.15)]">
-                <DialogHeader>
-                  <DialogTitle className="text-xl uppercase tracking-widest border-b border-amber-500/30 pb-2">
-                    Inventory
-                  </DialogTitle>
-                </DialogHeader>
-                {/* Inventory Grid */}
-                <div className="grid grid-cols-4 gap-3 py-4">
-                  {/* Slot 1: Filled */}
-                  <div className="aspect-square flex flex-col items-center justify-center border border-amber-500/40 bg-zinc-900 hover:bg-amber-500/10 cursor-pointer transition-colors">
-                    <Key size={28} className="mb-1" />
-                    <span className="text-[10px] uppercase">Rusted Key</span>
-                  </div>
-                  {/* Slot 2: Filled */}
-                  <div className="aspect-square flex flex-col items-center justify-center border border-amber-500/40 bg-zinc-900 hover:bg-amber-500/10 cursor-pointer transition-colors">
-                    <Scroll size={28} className="mb-1" />
-                    <span className="text-[10px] uppercase">Torn Note</span>
-                  </div>
-                  {/* Empty Slots */}
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="aspect-square border border-zinc-800 bg-zinc-950 flex items-center justify-center opacity-50">
-                      <span className="text-zinc-700 text-xs">- empty -</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="text-xs text-amber-500/60 mt-2">
-                  Weight: 2/8
-                </div>
-              </DialogContent>
-            </Dialog>
+import { GameContent } from "@/components/game/game-content"
+import { GameShell } from "@/components/game/game-shell"
+import { GameSidebar } from "@/components/game/game-sidebar"
+import { IntroModal } from "@/components/game/intro-modal"
+import type {
+  BackendMapNode,
+  CommandResponse,
+  GameInitResponse,
+  GameSnapshot,
+  HistoryEntryData,
+  InventoryItem,
+  MapNodeData,
+} from "@/components/game/types"
 
-            {/* MAP DIALOG */}
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="h-12 border-amber-500/50 text-amber-500 hover:bg-amber-500/20 hover:text-amber-400 cursor-pointer">
-                  <MapIcon size={24} />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-zinc-950 border-2 border-amber-500 text-amber-500 font-mono sm:max-w-lg shadow-[0_0_30px_rgba(245,158,11,0.15)]">
-                <DialogHeader>
-                  <DialogTitle className="text-xl uppercase tracking-widest border-b border-amber-500/30 pb-2">
-                    Local Map
-                  </DialogTitle>
-                </DialogHeader>
-                
-                {/* Stylized Map Area */}
-                <div className="flex flex-col items-center justify-center py-8 space-y-4">
-                  <div className="flex items-center space-x-4">
-                    {/* Unexplored Room */}
-                    <div className="w-16 h-12 border border-zinc-700 flex items-center justify-center">
-                      <span className="text-zinc-700">?</span>
-                    </div>
-                    <div className="w-8 h-px bg-zinc-700"></div>
-                    {/* Explored Room */}
-                    <div className="w-16 h-12 border border-amber-500/50 bg-zinc-900 flex items-center justify-center">
-                      <span className="text-xs">Hall</span>
-                    </div>
-                    <div className="w-8 h-px bg-amber-500/50"></div>
-                    {/* Boss/Danger Room */}
-                    <div className="w-16 h-12 border border-red-500/50 flex items-center justify-center text-red-500">
-                      <Skull size={20} />
-                    </div>
-                  </div>
-                  
-                  <div className="flex space-x-12 pr-24">
-                     <div className="w-px h-8 bg-zinc-700"></div>
-                     <div className="w-px h-8 bg-amber-500/50"></div>
-                  </div>
+const inventoryIcons = {
+  "Rusted Key": Key,
+  "Torn Note": Scroll,
+} as const
 
-                  <div className="flex items-center space-x-4">
-                     {/* Unexplored Room */}
-                     <div className="w-16 h-12 border border-zinc-700 flex items-center justify-center">
-                      <span className="text-zinc-700">?</span>
-                    </div>
-                    <div className="w-8 h-px bg-zinc-700"></div>
-                    {/* Current Location */}
-                    <div className="w-16 h-12 border-2 border-amber-400 bg-amber-500/20 shadow-[0_0_10px_rgba(245,158,11,0.4)] flex items-center justify-center animate-pulse">
-                      <span className="text-xs font-bold text-amber-300">You</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-xs text-amber-500/60 mt-2 flex justify-between">
-                  <span>Sector: map sector</span>
-                  <span>[ Signal Lost ]</span>
-                </div>
-              </DialogContent>
-            </Dialog>
+function toInventoryItems(snapshot: GameSnapshot | null): InventoryItem[] {
+  if (!snapshot) {
+    return []
+  }
 
-          </div>
-
-          {/* MAIN CONTENT AREA */}
-          <div className="flex flex-1 flex-col p-4 bg-zinc-950/50">
-            {/* History / Output Log */}
-            <div className="flex flex-col flex-1 overflow-y-auto space-y-4 mb-4 pr-2 scrollbar-thin scrollbar-thumb-amber-500/20">
-              <div className="text-amber-500/70">
-                <span className="text-amber-600 font-bold">{">"} Action command</span>
-                <p className="mt-1">Action command result example</p>
-              </div>
-              <div className="text-amber-400">
-                <span className="text-amber-600 font-bold">{">"} Action command</span>
-                <p className="mt-1">Action command result example</p>
-              </div>
-            </div>
-            
-            {/* Input Form */}
-            <div className="flex w-full mt-auto pt-4 border-t border-amber-500/30">
-              <form className="flex w-full items-center space-x-2">
-                <span className="text-amber-500 font-bold text-xl">{">"}</span>
-                <Input 
-                  className="flex-1 bg-transparent border-none text-amber-400 placeholder:text-amber-500/30 focus-visible:ring-0 focus-visible:ring-offset-0 text-lg rounded-none" 
-                  placeholder="What will you do?" 
-                  autoFocus
-                />
-                <Button className="bg-amber-500 text-zinc-950 hover:bg-amber-400 font-bold rounded-sm px-6">
-                  EXECUTE
-                </Button>
-              </form>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-  );
+  return snapshot.inventory.map((label) => ({
+    label,
+    icon: inventoryIcons[label as keyof typeof inventoryIcons] ?? Scroll,
+  }))
 }
 
-export default App;
+function toMapNodeData(node: BackendMapNode): MapNodeData {
+  const variantMap = {
+    Current: "current",
+    Explored: "explored",
+    Unexplored: "unexplored",
+    Danger: "danger",
+  } as const
+
+  return {
+    id: node.id,
+    label: node.status === "Current" ? "You" : node.name,
+    variant: variantMap[node.status],
+    x: node.x,
+    y: node.y,
+  }
+}
+
+function App() {
+  const [snapshot, setSnapshot] = useState<GameSnapshot | null>(null)
+  const [historyEntries, setHistoryEntries] = useState<HistoryEntryData[]>([])
+  const [commandValue, setCommandValue] = useState("")
+  const [introText, setIntroText] = useState("")
+  const [isIntroOpen, setIsIntroOpen] = useState(false)
+  const [isBusy, setIsBusy] = useState(true)
+
+  useEffect(() => {
+    let isMounted = true
+
+    const loadGame = async () => {
+      try {
+        const response = await invoke<GameInitResponse>("init_game")
+
+        if (!isMounted) {
+          return
+        }
+
+        setSnapshot(response.snapshot)
+        setIntroText(response.intro_text)
+        setIsIntroOpen(Boolean(response.intro_text))
+      } catch {
+        if (!isMounted) {
+          return
+        }
+
+        setHistoryEntries([
+          {
+            result: "Failed to initialize the game session.",
+            tone: "secondary",
+          },
+        ])
+      } finally {
+        if (isMounted) {
+          setIsBusy(false)
+        }
+      }
+    }
+
+    void loadGame()
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const inventoryItems = useMemo(() => toInventoryItems(snapshot), [snapshot])
+  const mappedNodes = useMemo(
+    () => snapshot?.map_nodes.map(toMapNodeData) ?? [],
+    [snapshot]
+  )
+
+  const mapTopRow = mappedNodes
+    .filter((node) => node.y === 0)
+    .sort((left, right) => left.x - right.x)
+  const mapBottomRow = mappedNodes
+    .filter((node) => node.y === 1)
+    .sort((left, right) => left.x - right.x)
+
+  const handleCommandSubmit = async () => {
+    const trimmedCommand = commandValue.trim()
+    if (!trimmedCommand) {
+      return
+    }
+
+    setIsBusy(true)
+
+    try {
+      const response = await invoke<CommandResponse>("submit_command", {
+        input: trimmedCommand,
+      })
+
+      setSnapshot(response.snapshot)
+      setHistoryEntries((currentEntries) => {
+        const nextEntries: HistoryEntryData[] = [...currentEntries]
+
+        response.messages.forEach((message, index) => {
+          nextEntries.push({
+            command: index === 0 ? trimmedCommand : undefined,
+            result: message,
+            tone: index === 0 ? "primary" : "secondary",
+          })
+        })
+
+        return nextEntries
+      })
+      setCommandValue("")
+    } catch {
+      setHistoryEntries((currentEntries) => [
+        ...currentEntries,
+        {
+          command: trimmedCommand,
+          result: "The command could not be processed.",
+          tone: "secondary",
+        },
+      ])
+    } finally {
+      setIsBusy(false)
+    }
+  }
+
+  return (
+    <>
+      <GameShell
+        sidebar={
+          <GameSidebar
+            inventoryItems={inventoryItems}
+            emptyInventorySlots={Math.max(0, 8 - inventoryItems.length)}
+            inventoryWeightLabel={snapshot?.inventory_weight_label ?? "Weight: 0/8"}
+            mapTopRow={mapTopRow}
+            mapBottomRow={mapBottomRow}
+            mapSectorLabel={
+              snapshot
+                ? `Sector: ${snapshot.current_room_name}`
+                : "Sector: loading..."
+            }
+            mapStatusLabel={isBusy ? "[ Processing ]" : "[ Signal Stable ]"}
+          />
+        }
+        content={
+          <GameContent
+            historyEntries={historyEntries}
+            commandPlaceholder="What will you do?"
+            commandSubmitLabel={isBusy ? "WAIT" : "EXECUTE"}
+            commandValue={commandValue}
+            commandDisabled={isBusy || !snapshot || isIntroOpen}
+            onCommandChange={setCommandValue}
+            onCommandSubmit={() => void handleCommandSubmit()}
+          />
+        }
+      />
+      <IntroModal
+        isOpen={isIntroOpen}
+        text={introText}
+        onClose={() => setIsIntroOpen(false)}
+      />
+    </>
+  )
+}
+
+export default App
