@@ -1,0 +1,58 @@
+{
+  "id": "car_scene",
+  "name": "Lonely Road",
+  "intro_text": "The road behind you has already disappeared into fog.\nOnly one thing still feels real: the abandoned car waiting beside the shoulder.\nIf you want answers, you will have to begin there.",
+  "state": {
+    "current_room_id": "roadside",
+    "visited_rooms": [
+      "roadside"
+    ],
+    "completed_flags": [],
+    "inventory": []
+  },
+  "rooms": {
+    "roadside": {
+      "id": "roadside",
+      "name": "Roadside",
+      "description": "You stand alone on a silent roadside. A battered car waits under a dead streetlight, its metal body reflecting the last trace of rain.",
+      "x": 1,
+      "y": 1,
+      "exits": {},
+      "is_danger_zone": false
+    },
+    "inside_car": {
+      "id": "inside_car",
+      "name": "Inside The Car",
+      "description": "You are inside the car now. The cabin smells of dust, gasoline, and old leather. The dashboard is cracked, but the steering wheel and front seats are still intact.",
+      "x": 1,
+      "y": 0,
+      "exits": {},
+      "is_danger_zone": false
+    }
+  },
+  "available_actions": {
+    "enter_car": {
+      "id": "enter_car",
+      "verbs": [
+        "enter",
+        "get",
+        "climb"
+      ],
+      "targets": [
+        "car",
+        "vehicle"
+      ],
+      "required_flags": [],
+      "required_items": [],
+      "required_room": "roadside",
+      "destination_room": "inside_car",
+      "set_flags": [
+        "entered_car"
+      ],
+      "removes_flags": [],
+      "success_message": "You enter in the car.",
+      "missing_req_message": "Something is stopping you from entering the car.",
+      "already_done_message": "You are already inside the car."
+    }
+  }
+}
