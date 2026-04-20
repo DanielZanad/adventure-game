@@ -17,6 +17,7 @@ import type {
 } from "@/components/game/types"
 
 const inventoryIcons = {
+  car_key: Key,
   "Rusted Key": Key,
   "Torn Note": Scroll,
 } as const
@@ -80,6 +81,8 @@ function App() {
           {
             result: "Failed to initialize the game session.",
             tone: "secondary",
+            animate: true,
+            animationDelayMs: 0,
           },
         ])
       } finally {
@@ -125,13 +128,24 @@ function App() {
       setSnapshot(response.snapshot)
       setHistoryEntries((currentEntries) => {
         const nextEntries: HistoryEntryData[] = [...currentEntries]
+        let delayOffsetMs = 0
 
         response.messages.forEach((message, index) => {
+          const commandLabel = index === 0 ? trimmedCommand : undefined
+          const estimatedCommandDuration = commandLabel
+            ? commandLabel.length * 24 + 120
+            : 0
+          const messageDelay = index === 0 ? estimatedCommandDuration : delayOffsetMs
+
           nextEntries.push({
-            command: index === 0 ? trimmedCommand : undefined,
+            command: commandLabel,
             result: message,
             tone: index === 0 ? "primary" : "secondary",
+            animate: true,
+            animationDelayMs: messageDelay,
           })
+
+          delayOffsetMs = messageDelay + Math.min(650, message.length * 24)
         })
 
         return nextEntries
@@ -144,6 +158,8 @@ function App() {
           command: trimmedCommand,
           result: "The command could not be processed.",
           tone: "secondary",
+          animate: true,
+          animationDelayMs: 0,
         },
       ])
     } finally {

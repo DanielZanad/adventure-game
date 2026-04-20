@@ -9,6 +9,8 @@ export type HistoryEntryData = {
   command?: string
   result: string
   tone?: "primary" | "secondary"
+  animate?: boolean
+  animationDelayMs?: number
 }
 
 export type MapNodeData = {

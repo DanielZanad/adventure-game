@@ -179,7 +179,19 @@ impl Scenario {
                     self.state.completed_flags.remove(flag);
                 }
 
-                vec![action.success_message, self.describe_current_room()]
+                for item in &action.add_items {
+                    self.state.inventory.insert(item.clone());
+                }
+
+                for item in &action.remove_items {
+                    self.state.inventory.remove(item);
+                }
+
+                if action.destination_room.is_some() {
+                    vec![action.success_message, self.describe_current_room()]
+                } else {
+                    vec![action.success_message]
+                }
             }
             ActionResult::AlreadyDone(message)
             | ActionResult::MissingRequirements(message)
@@ -266,5 +278,61 @@ mod tests {
         assert_eq!(response.messages[0], "You enter in the car.");
         assert!(response.messages[1].contains("inside the car"));
         assert_eq!(response.snapshot.current_room_name, "Inside The Car");
+    }
+
+    #[test]
+    fn look_inside_glove_box_returns_key_hint() {
+        let mut scenario = seed_game::seeded_car_scene();
+
+        scenario.submit_command("enter car");
+        let response = scenario.submit_command("look inside glove box");
+
+        assert_eq!(response.messages.len(), 1);
+        assert!(response.messages[0].contains("small brass key"));
+    }
+
+    #[test]
+    fn pick_up_key_adds_item_to_inventory() {
+        let mut scenario = seed_game::seeded_car_scene();
+
+        scenario.submit_command("enter car");
+        scenario.submit_command("open glove box");
+        let response = scenario.submit_command("pick up key");
+
+        assert_eq!(
+            response.messages[0],
+            "You get the key and put it into your pocket."
+        );
+        assert!(response.snapshot.inventory.contains(&"car_key".to_string()));
+    }
+
+    #[test]
+    fn start_car_requires_key() {
+        let mut scenario = seed_game::seeded_car_scene();
+
+        scenario.submit_command("enter car");
+        let response = scenario.submit_command("use key to start car");
+
+        assert_eq!(response.messages.len(), 1);
+        assert_eq!(
+            response.messages[0],
+            "The ignition will not turn. You need to find the key first."
+        );
+    }
+
+    #[test]
+    fn use_key_to_start_car_succeeds_after_picking_it_up() {
+        let mut scenario = seed_game::seeded_car_scene();
+
+        scenario.submit_command("enter car");
+        scenario.submit_command("open glove box");
+        scenario.submit_command("take key");
+        let response = scenario.submit_command("use key to start car");
+
+        assert_eq!(response.messages.len(), 1);
+        assert_eq!(
+            response.messages[0],
+            "You insert the key and turn it. The engine sputters, then roars to life."
+        );
     }
 }

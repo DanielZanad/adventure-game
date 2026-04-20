@@ -15,6 +15,11 @@ pub struct Action {
     pub set_flags: Vec<String>,
     pub removes_flags: Vec<String>,
 
+    #[serde(default)]
+    pub add_items: Vec<String>,
+    #[serde(default)]
+    pub remove_items: Vec<String>,
+
     pub success_message: String,
     pub missing_req_message: String,
     pub already_done_message: String,

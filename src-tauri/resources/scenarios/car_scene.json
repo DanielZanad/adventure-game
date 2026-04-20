@@ -23,7 +23,7 @@
     "inside_car": {
       "id": "inside_car",
       "name": "Inside The Car",
-      "description": "You are inside the car now. The cabin smells of dust, gasoline, and old leather. The dashboard is cracked, but the steering wheel and front seats are still intact.",
+      "description": "You are inside the car now. The cabin smells of dust, gasoline, and old leather. The dashboard is cracked, but the steering wheel and front seats are still intact. The glove box hangs slightly ajar.",
       "x": 1,
       "y": 0,
       "exits": {},
@@ -50,9 +50,89 @@
         "entered_car"
       ],
       "removes_flags": [],
+      "add_items": [],
+      "remove_items": [],
       "success_message": "You enter in the car.",
       "missing_req_message": "Something is stopping you from entering the car.",
       "already_done_message": "You are already inside the car."
+    },
+    "open_glove_box": {
+      "id": "open_glove_box",
+      "verbs": [
+        "look",
+        "open"
+      ],
+      "targets": [
+        "glove box"
+      ],
+      "required_flags": [],
+      "required_items": [],
+      "required_room": "inside_car",
+      "destination_room": null,
+      "set_flags": [
+        "glove_box_opened"
+      ],
+      "removes_flags": [],
+      "add_items": [],
+      "remove_items": [],
+      "success_message": "You pull open the glove box and peer inside. A small brass key rests beside an old registration slip.",
+      "missing_req_message": "You need to be inside the car to check the glove box.",
+      "already_done_message": "The glove box is already open. The small brass key is still inside."
+    },
+    "take_key": {
+      "id": "take_key",
+      "verbs": [
+        "take",
+        "get",
+        "pick"
+      ],
+      "targets": [
+        "key",
+        "brass key"
+      ],
+      "required_flags": [
+        "glove_box_opened"
+      ],
+      "required_items": [],
+      "required_room": "inside_car",
+      "destination_room": null,
+      "set_flags": [],
+      "removes_flags": [],
+      "add_items": [
+        "car_key"
+      ],
+      "remove_items": [],
+      "success_message": "You get the key and put it into your pocket.",
+      "missing_req_message": "You do not see any key you can take right now.",
+      "already_done_message": "You already took the key."
+    },
+    "start_car": {
+      "id": "start_car",
+      "verbs": [
+        "use",
+        "start",
+        "turn"
+      ],
+      "targets": [
+        "car",
+        "engine",
+        "key"
+      ],
+      "required_flags": [],
+      "required_items": [
+        "car_key"
+      ],
+      "required_room": "inside_car",
+      "destination_room": null,
+      "set_flags": [
+        "car_started"
+      ],
+      "removes_flags": [],
+      "add_items": [],
+      "remove_items": [],
+      "success_message": "You insert the key and turn it. The engine sputters, then roars to life.",
+      "missing_req_message": "The ignition will not turn. You need to find the key first.",
+      "already_done_message": "The engine is already running."
     }
   }
 }
